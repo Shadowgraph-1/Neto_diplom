@@ -11,6 +11,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mycloud.settings')
+# Для production установите переменную окружения DJANGO_SETTINGS_MODULE=mycloud.settings.prod
+# По умолчанию используется dev
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mycloud.settings.prod')
 
 application = get_wsgi_application()
