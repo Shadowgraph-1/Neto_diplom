@@ -17,8 +17,8 @@ function LoginModal({ onClose }) {
         try {
             const data = await api.login(username, password);
             
-            if (data.token) {
-                // Успешный вход
+            if (data.user) {
+                // Успешный вход (сессия создана автоматически)
                 alert('Вход выполнен успешно!');
                 navigate('/dashboard'); // перенаправляем на страницу с файлами
                 if (onClose) onClose();

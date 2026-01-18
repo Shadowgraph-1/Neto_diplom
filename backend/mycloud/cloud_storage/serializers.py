@@ -30,6 +30,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Пароль должен содержать хотя бы один специальный символ")
         return value
     
+    def validate_full_name(self, value):
+        # Полное имя должно содержать минимум 2 символа
+        if len(value.strip()) < 2:
+            raise serializers.ValidationError("Полное имя должно содержать минимум 2 символа")
+        return value.strip()
+    
+    def validate_email(self, value):
+        # Проверка формата email
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, value):
+            raise serializers.ValidationError("Неверный формат email")
+        return value
+    
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data['username'],

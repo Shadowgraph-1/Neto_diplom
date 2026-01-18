@@ -1,10 +1,7 @@
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import login, logout
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse, Http404
@@ -14,18 +11,11 @@ from .serializers import UserRegistrationSerializer, UserSerializer, FileSeriali
 import os
 import logging
 from django.conf import settings
-from datetime import datetime
 
-# Настройка логирования
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+# Логирование (настройки берутся из settings.py)
+logger = logging.getLogger('cloud_storage')
 
 
-@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_user(request):
@@ -43,11 +33,10 @@ def register_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_user(request):
-    """Аутентификация пользователя"""
+    """Аутентификация пользователя (использует сессионную аутентификацию)"""
     username = request.data.get('username')
     password = request.data.get('password')
     logger.info(f"Попытка входа пользователя: {username}")
@@ -56,12 +45,9 @@ def login_user(request):
         user = User.objects.get(username=username)
         if user.check_password(password):
             login(request, user)
-            # Создаем или получаем токен
-            token, created = Token.objects.get_or_create(user=user)
             logger.info(f"Успешный вход пользователя: {username} (ID: {user.id})")
             return Response({
                 'message': 'Успешный вход',
-                'token': token.key,  # добавили токен
                 'user': UserSerializer(user).data
             })
         else:
@@ -72,7 +58,6 @@ def login_user(request):
         return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
 
 
-@csrf_exempt
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_user(request):
@@ -83,7 +68,6 @@ def logout_user(request):
     return Response({'message': 'Успешный выход'})
 
 
-@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def current_user(request):
@@ -129,7 +113,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class FileViewSet(viewsets.ModelViewSet):
     """API для управления файлами"""
     serializer_class = FileSerializer
@@ -270,7 +253,6 @@ class FileViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@csrf_exempt
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def download_by_link(request, special_link):

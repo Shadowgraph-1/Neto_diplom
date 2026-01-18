@@ -37,9 +37,14 @@ function Dashboard() {
 
 
     // Выход из системы
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/');
+    const handleLogout = async () => {
+        try {
+            await api.logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Ошибка выхода:', error);
+            navigate('/');
+        }
     };
 
     // Загрузка файла

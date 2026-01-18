@@ -79,8 +79,8 @@ function Register() {
         try {
             const data = await api.register(login, email, password, fullName);
             
-            // Если сервер вернул токен или ID — всё хорошо
-            if (data.token || data.id || data.message) {
+            // Если сервер вернул user или message — всё хорошо
+            if (data.user || data.id || data.message) {
                 alert('Регистрация успешна!');
                 navigate('/');
             } else {

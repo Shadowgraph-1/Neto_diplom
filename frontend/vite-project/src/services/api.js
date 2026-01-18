@@ -1,168 +1,206 @@
-const API_URL = 'http://127.0.0.1:8000/api';
+// Конфигурация API
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+
+// Вспомогательная функция для получения CSRF токена из cookies
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Вспомогательная функция для выполнения запросов с сессионной аутентификацией
+async function apiRequest(url, options = {}) {
+  const csrftoken = getCookie('csrftoken');
+  
+  const defaultOptions = {
+    credentials: 'include', // Важно для сессий и CSRF
+    headers: {
+      'Content-Type': 'application/json',
+      ...(csrftoken && { 'X-CSRFToken': csrftoken }),
+      ...options.headers,
+    },
+    ...options,
+  };
+
+  // Для FormData не устанавливаем Content-Type (браузер сделает это сам)
+  if (options.body instanceof FormData) {
+    delete defaultOptions.headers['Content-Type'];
+  }
+
+  try {
+    const response = await fetch(`${API_URL}${url}`, defaultOptions);
+    
+    // Обработка ошибок
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Произошла ошибка' }));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Для запросов без тела (DELETE) возвращаем boolean
+    if (options.method === 'DELETE' && response.status === 204) {
+      return true;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+}
 
 export const api = {
   // Регистрация
   register: async (username, email, password, full_name) => {
-    const response = await fetch(`${API_URL}/register/`, {
+    return apiRequest('/register/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        username,      // НЕ login!
-        email, 
-        password, 
-        full_name      // НЕ fullName!
-      })
+      body: JSON.stringify({ username, email, password, full_name }),
     });
-    return response.json();
   },
 
-  // Вход
+  // Вход (использует сессионную аутентификацию)
   login: async (username, password) => {
-    const response = await fetch(`${API_URL}/login/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+    // Сначала получаем CSRF токен
+    await fetch(`${API_URL}/login/`, {
+      method: 'GET',
+      credentials: 'include',
     });
-    const data = await response.json();
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('is_admin', data.is_admin ? 'true' : 'false');
-    }
-    return data;
+    
+    // Теперь выполняем вход
+    return apiRequest('/login/', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  },
+
+  // Выход
+  logout: async () => {
+    const result = await apiRequest('/logout/', {
+      method: 'POST',
+    });
+    return result;
+  },
+
+  // Получить текущего пользователя
+  getCurrentUser: async () => {
+    return apiRequest('/current-user/');
   },
 
   // Получить список файлов
   getFiles: async (userId = null) => {
-    const token = localStorage.getItem('token');
-    const url = userId ? `${API_URL}/files/?user_id=${userId}` : `${API_URL}/files/`;
-    const response = await fetch(url, {
-      headers: { 'Authorization': `Token ${token}` }
-    });
-    return response.json();
+    const url = userId ? `/files/?user_id=${userId}` : '/files/';
+    return apiRequest(url);
   },
 
   // Загрузить файл
   uploadFile: async (file, comment) => {
-    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('file', file);
     formData.append('comment', comment);
     
-    const response = await fetch(`${API_URL}/files/`, {
+    return apiRequest('/files/', {
       method: 'POST',
-      headers: { 'Authorization': `Token ${token}` },
-      body: formData
+      body: formData,
+      headers: {}, // Убираем заголовки для FormData
     });
-    return response.json();
   },
 
   // Удалить файл
   deleteFile: async (fileId) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/files/${fileId}/`, {
+    return apiRequest(`/files/${fileId}/`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Token ${token}` }
     });
-    return response.ok;
   },
 
+  // Переименовать файл
   renameFile: async (fileId, newName) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/files/${fileId}/`, {
+    return apiRequest(`/files/${fileId}/`, {
       method: 'PATCH',
-      headers: { 
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ original_name: newName })
+      body: JSON.stringify({ original_name: newName }),
     });
-    return response.json();
   },
 
+  // Скачать файл
   downloadFile: async (fileId, fileName) => {
-    const token = localStorage.getItem('token');
-    
+    const csrftoken = getCookie('csrftoken');
     const response = await fetch(`${API_URL}/files/${fileId}/download/`, {
       method: 'GET',
-      headers: { 
-        'Authorization': `Token ${token}` 
-      }
+      credentials: 'include',
+      headers: {
+        ...(csrftoken && { 'X-CSRFToken': csrftoken }),
+      },
     });
 
     if (response.ok) {
       const blob = await response.blob();
-      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
-      link.setAttribute('download', fileName || 'file'); 
-      
+      link.setAttribute('download', fileName || 'file');
       document.body.appendChild(link);
       link.click();
-      
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
     } else {
-      console.error('Ошибка при скачивании');
-      alert('Не удалось скачать файл. Возможно, истек токен.');
+      const errorData = await response.json().catch(() => ({ error: 'Ошибка при скачивании' }));
+      throw new Error(errorData.error || 'Не удалось скачать файл');
     }
   },
 
+  // Получить список пользователей (только для админов)
   getUsers: async () => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/`, {
-      headers: { 'Authorization': `Token ${token}` }
-    });
-    return response.json();
+    return apiRequest('/users/');
   },
 
+  // Удалить пользователя
   deleteUser: async (userId) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/${userId}/`, {
+    return apiRequest(`/users/${userId}/`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Token ${token}` }
     });
-    return response.ok;
   },
 
+  // Обновить пользователя (изменение прав администратора)
   updateUser: async (userId, isAdmin) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/${userId}/`, {
+    return apiRequest(`/users/${userId}/`, {
       method: 'PATCH',
-      headers: { 
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ is_admin: isAdmin })
+      body: JSON.stringify({ is_admin: isAdmin }),
     });
-    return response.json();
   },
 
   // Изменение комментария к файлу
   updateFileComment: async (fileId, comment) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/files/${fileId}/`, {
+    return apiRequest(`/files/${fileId}/`, {
       method: 'PATCH',
-      headers: { 
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ comment: comment })
+      body: JSON.stringify({ comment: comment }),
     });
-    return response.json();
   },
 
   // Просмотр файла в браузере
   viewFile: async (fileId) => {
-    const token = localStorage.getItem('token');
+    const csrftoken = getCookie('csrftoken');
     const response = await fetch(`${API_URL}/files/${fileId}/view/`, {
-      headers: { 'Authorization': `Token ${token}` }
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        ...(csrftoken && { 'X-CSRFToken': csrftoken }),
+      },
     });
+    
     if (response.ok) {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
+    } else {
+      const errorData = await response.json().catch(() => ({ error: 'Ошибка при просмотре' }));
+      throw new Error(errorData.error || 'Не удалось открыть файл');
     }
-  }
+  },
 };
