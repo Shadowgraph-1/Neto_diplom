@@ -25,7 +25,7 @@
 ### 1. Клонирование репозитория
 
 ```bash
-git clone <ссылка-на-репозиторий>
+git clone https://github.com/Shadowgraph-1/Neto_diplom.git
 cd Neto_diplom
 ```
 
@@ -191,10 +191,10 @@ sudo su - mycloud
 
 ```bash
 # Через Git
-git clone <ссылка-на-репозиторий> /home/mycloud/mycloud_app
+git clone https://github.com/Shadowgraph-1/Neto_diplom.git /home/mycloud/mycloud_app
 cd /home/mycloud/mycloud_app/backend/mycloud
 
-# Или через SCP/SFTP
+# Или через SCP/SFTP (загрузите файлы проекта вручную)
 ```
 
 #### 2.2. Настройка виртуального окружения
