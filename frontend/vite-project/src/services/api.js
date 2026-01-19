@@ -1,5 +1,8 @@
 // Конфигурация API
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+// Для подключения к вашему бэкенду на сервере используйте:
+// VITE_API_URL=http://130.49.148.127:8000/api
+// Или локально для разработки: VITE_API_URL=http://127.0.0.1:8000/api
+const API_URL = import.meta.env.VITE_API_URL || 'http://130.49.148.127:8000/api';
 
 // Вспомогательная функция для получения CSRF токена из cookies
 function getCookie(name) {
@@ -41,8 +44,22 @@ async function apiRequest(url, options = {}) {
     
     // Обработка ошибок
     if (!response.ok) {
+      // Обработка 401 (Unauthorized) - перенаправление на страницу входа
+      if (response.status === 401) {
+        console.warn('Unauthorized access - redirecting to login');
+        if (window.location.pathname !== '/' && window.location.pathname !== '/registration') {
+          window.location.href = '/';
+        }
+      }
+      
+      // Обработка 403 (Forbidden) - недостаточно прав
+      if (response.status === 403) {
+        const errorData = await response.json().catch(() => ({ error: 'Доступ запрещен' }));
+        throw new Error(errorData.error || 'Недостаточно прав для выполнения операции');
+      }
+      
       const errorData = await response.json().catch(() => ({ error: 'Произошла ошибка' }));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
     }
     
     // Для запросов без тела (DELETE) возвращаем boolean

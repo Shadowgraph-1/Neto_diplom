@@ -4,6 +4,7 @@ import uuid
 import os
 
 class User(AbstractUser):
+    email = models.EmailField(unique=True, max_length=254, verbose_name="email address")
     full_name = models.CharField(max_length=255, verbose_name="Полное имя")
     is_admin = models.BooleanField(default=False, verbose_name="Администритор")
     storage_path = models.CharField(max_length=255, blank=True, verbose_name="Путь к хранилищу")

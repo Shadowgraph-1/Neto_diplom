@@ -1,0 +1,14 @@
+# Development dependencies
+# Include all production dependencies plus development tools
+
+# Production dependencies (from requirements.txt)
+-r requirements.txt
+
+# Development tools
+ipython>=8.0.0
+django-debug-toolbar>=4.0.0
+pytest>=7.0.0
+pytest-django>=4.5.0
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0
