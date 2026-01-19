@@ -1,3 +1,4 @@
+from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -24,10 +25,12 @@ def register_user(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
+	token, created = Token.objects.get_or_create(user=user)
         logger.info(f"Пользователь успешно зарегистрирован: {user.username} (ID: {user.id})")
         return Response({
             'message': 'Пользователь успешно зарегистрирован',
-            'user': UserSerializer(user).data
+            'user': UserSerializer(user).data,
+	    'token': token.key
         }, status=status.HTTP_201_CREATED)
     logger.warning(f"Ошибка регистрации: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -45,10 +48,12 @@ def login_user(request):
         user = User.objects.get(username=username)
         if user.check_password(password):
             login(request, user)
+	    token, created = Token.objects.get_or_create(user=user)
             logger.info(f"Успешный вход пользователя: {username} (ID: {user.id})")
             return Response({
                 'message': 'Успешный вход',
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user).data,
+		'token': token.key
             })
         else:
             logger.warning(f"Неверный пароль для пользователя: {username}")

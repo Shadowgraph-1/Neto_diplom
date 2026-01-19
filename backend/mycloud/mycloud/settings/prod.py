@@ -37,7 +37,7 @@ SESSION_COOKIE_AGE = 86400  # 24 часа
 # CORS settings для production
 # CORS_ALLOWED_ORIGINS должен быть установлен через переменную окружения
 # Пример: CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
-cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 CORS_ALLOW_ALL_ORIGINS = False
 
@@ -54,3 +54,5 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+.
