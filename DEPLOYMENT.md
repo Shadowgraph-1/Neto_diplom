@@ -81,6 +81,18 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
+**Примечание:** По умолчанию проект использует **production настройки**. Для локальной разработки установите переменную окружения:
+```bash
+# Windows PowerShell
+$env:DJANGO_SETTINGS_MODULE="mycloud.settings.dev"
+
+# Windows CMD
+set DJANGO_SETTINGS_MODULE=mycloud.settings.dev
+
+# Linux/Mac
+export DJANGO_SETTINGS_MODULE=mycloud.settings.dev
+```
+
 #### 2.5. Применение миграций
 
 ```bash
@@ -230,11 +242,23 @@ DB_PASSWORD=secure_password
 DB_HOST=localhost
 DB_PORT=5432
 
-# Django
-SECRET_KEY=generate-secure-random-key-here
+# Django (ОБЯЗАТЕЛЬНО для production!)
+SECRET_KEY=generate-secure-random-key-here-min-50-chars
 DEBUG=False
 ALLOWED_HOSTS=your-domain.com,www.your-domain.com,IP-адрес-сервера
+
+# CSRF и CORS (ОБЯЗАТЕЛЬНО для production!)
+CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+
+# SSL (если используете HTTPS)
+SECURE_SSL_REDIRECT=True
 ```
+
+**ВАЖНО:** 
+- Проект настроен на **production режим по умолчанию**
+- Для разработки установите: `export DJANGO_SETTINGS_MODULE=mycloud.settings.dev`
+- Обязательно настройте `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` и `CORS_ALLOWED_ORIGINS` для вашего домена
 
 #### 2.5. Сборка фронтенда
 

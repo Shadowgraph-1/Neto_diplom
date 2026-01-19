@@ -7,7 +7,10 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+# ALLOWED_HOSTS должен быть установлен через переменную окружения
+# Пример: ALLOWED_HOSTS=your-domain.com,www.your-domain.com,IP-адрес
+allowed_hosts = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',') if host.strip()]
 
 # Security settings для production
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
@@ -20,7 +23,10 @@ SECURE_HSTS_PRELOAD = True
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Strict'
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+# CSRF_TRUSTED_ORIGINS должен быть установлен через переменную окружения
+# Пример: CSRF_TRUSTED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+csrf_origins = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins.split(',') if origin.strip()]
 
 # Session settings для production
 SESSION_COOKIE_SECURE = True
@@ -29,7 +35,10 @@ SESSION_COOKIE_SAMESITE = 'Strict'
 SESSION_COOKIE_AGE = 86400  # 24 часа
 
 # CORS settings для production
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+# CORS_ALLOWED_ORIGINS должен быть установлен через переменную окружения
+# Пример: CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 CORS_ALLOW_ALL_ORIGINS = False
 
 # Static files

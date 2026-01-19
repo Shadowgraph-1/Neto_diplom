@@ -6,7 +6,9 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mycloud.settings.dev')
+    # По умолчанию используем production настройки
+    # Для разработки установите переменную окружения: DJANGO_SETTINGS_MODULE=mycloud.settings.dev
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mycloud.settings.prod')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
