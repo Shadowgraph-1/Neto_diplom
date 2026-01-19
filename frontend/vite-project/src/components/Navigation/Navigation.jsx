@@ -13,9 +13,15 @@ function Navigation() {
         api.getCurrentUser()
             .then((user) => {
                 setIsAuthenticated(true);
-                setIsAdmin(user.is_admin || false);
+                const adminStatus = user.is_admin === true || user.is_admin === 'true';
+                setIsAdmin(adminStatus);
+                // Отладочная информация
+                if (adminStatus) {
+                    console.log('User is admin:', user);
+                }
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error('Navigation: Error getting current user:', error);
                 setIsAuthenticated(false);
                 setIsAdmin(false);
             })
@@ -93,18 +99,20 @@ function Navigation() {
                         >
                             Файлы
                         </button>
-                        {isAdmin && (
-                            <button 
-                                onClick={() => navigate('/admin')} 
-                                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
-                                    location.pathname === '/admin' 
-                                        ? 'bg-[#d4af37] text-black' 
-                                        : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                                }`}
-                            >
-                                Админ
-                            </button>
-                        )}
+                        <button 
+                            onClick={() => navigate('/admin')} 
+                            className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
+                                location.pathname === '/admin' 
+                                    ? 'bg-[#d4af37] text-black' 
+                                    : isAdmin 
+                                        ? 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]' 
+                                        : 'text-gray-600 cursor-not-allowed opacity-50'
+                            }`}
+                            disabled={!isAdmin}
+                            title={!isAdmin ? 'Требуются права администратора' : 'Админ панель'}
+                        >
+                            Админ
+                        </button>
                     </div>
                 </div>
                 <button 
