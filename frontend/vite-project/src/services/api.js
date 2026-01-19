@@ -121,13 +121,17 @@ export const api = {
     
     const token = getAuthToken();
     
+    // Создаем заголовки с токеном
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Token ${token}`;
+    }
+    
     // Для FormData используем отдельный запрос с токеном
     const response = await fetch(`${API_URL}/files/`, {
       method: 'POST',
       body: formData,
-      headers: {
-        ...(token && { 'Authorization': `Token ${token}` }),
-      },
+      headers: headers,
     });
     
     if (!response.ok) {
