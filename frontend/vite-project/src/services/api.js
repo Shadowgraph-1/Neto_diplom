@@ -119,11 +119,29 @@ export const api = {
     formData.append('file', file);
     formData.append('comment', comment);
     
-    return apiRequest('/files/', {
+    const token = getAuthToken();
+    
+    // Для FormData используем отдельный запрос с токеном
+    const response = await fetch(`${API_URL}/files/`, {
       method: 'POST',
       body: formData,
-      headers: {}, // Убираем заголовки для FormData
+      headers: {
+        ...(token && { 'Authorization': `Token ${token}` }),
+      },
     });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        removeAuthToken();
+        if (window.location.pathname !== '/' && window.location.pathname !== '/registration') {
+          window.location.href = '/';
+        }
+      }
+      const errorData = await response.json().catch(() => ({ error: 'Произошла ошибка' }));
+      throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
   },
 
   // Удалить файл
