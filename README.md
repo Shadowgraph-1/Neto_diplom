@@ -229,6 +229,35 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
+### Назначение прав администратора существующему пользователю
+
+Если нужно сделать существующего пользователя администратором, используйте Django shell:
+
+```python
+from cloud_storage.models import User
+
+# Найдите вашего пользователя (например, SGraph)
+user = User.objects.get(username='SGraph')
+
+# Проверьте текущий статус
+print(f"Username: {user.username}")
+print(f"Is admin: {user.is_admin}")
+
+# Установите права администратора
+user.is_admin = True
+user.save()
+
+# Проверьте что сохранилось
+print(f"Is admin after save: {user.is_admin}")
+exit()
+```
+
+Или используйте готовый скрипт:
+```bash
+cd backend/mycloud
+python make_admin.py <username>
+```
+
 5. Запустите сервер:
 ```bash
 python manage.py runserver
