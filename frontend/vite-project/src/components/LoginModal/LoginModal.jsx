@@ -4,7 +4,7 @@ import { api } from "../../services/api";
 
 function LoginModal({ onClose }) {
     const navigate = useNavigate();
-    const [username, setUsername] = useState(''); // изменено с email на username
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,61 +18,59 @@ function LoginModal({ onClose }) {
             const data = await api.login(username, password);
             
             if (data.user) {
-                // Успешный вход (сессия создана автоматически)
-                alert('Вход выполнен успешно!');
-                navigate('/dashboard'); // перенаправляем на страницу с файлами
+                navigate('/dashboard');
                 if (onClose) onClose();
             } else if (data.error) {
                 setError(data.error);
             }
         } catch (err) {
             console.error('Ошибка входа:', err);
-            setError('Произошла ошибка при входе. Проверьте данные.');
+            setError(err.message || 'Произошла ошибка при входе. Проверьте данные.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="relative w-full max-w-md bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800 p-10 shadow-2xl rounded-xl">
+        <div className="relative w-full max-w-md bg-[#0a0a0a] border border-[#2a2a2a] p-10 rounded-xl">
             <button 
                 type="button" 
                 onClick={onClose} 
                 aria-label="Закрыть" 
-                className="absolute top-3 right-3 text-zinc-300 hover:text-white text-2xl leading-none"
+                className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl leading-none transition-colors"
             >
                 &times;
             </button>
             
-            <h2 className="text-sm font-black text-center text-white mb-12 uppercase tracking-[0.5em]">
-                Вход в систему
-            </h2>
+            <div className="mb-8">
+                <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Вход</h2>
+                <p className="text-gray-400 text-xs uppercase tracking-widest">Войдите в свой аккаунт</p>
+            </div>
 
-            {/* Показываем ошибки */}
             {error && (
-                <div className="mb-4 p-3 bg-red-900/50 border border-red-500 text-red-200 rounded text-sm">
+                <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 text-red-400 rounded-lg text-sm">
                     {error}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-10">
-                <div className="relative group">
-                    <label htmlFor="username" className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-3 group-focus-within:text-white transition-colors">
-                        Логин {/* изменено с "Почта" на "Логин" */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                    <label htmlFor="username" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                        Логин
                     </label>
                     <input 
-                        type="text" /* изменено с email на text */
+                        type="text"
                         id="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
                         placeholder="Введите ваш логин"
-                        className="w-full bg-transparent border-b border-zinc-800 py-3 text-white placeholder-zinc-700 focus:outline-none focus:border-white transition-all duration-500" 
+                        className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors"
                     />
                 </div>
 
-                <div className="relative group">
-                    <label htmlFor="password" className="block text-[10px] uppercase tracking-widest text-zinc-500 mb-3 group-focus-within:text-white transition-colors">
+                <div>
+                    <label htmlFor="password" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                         Пароль
                     </label>
                     <input 
@@ -82,16 +80,16 @@ function LoginModal({ onClose }) {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="Введите ваш пароль"
-                        className="w-full bg-transparent border-b border-zinc-800 py-3 text-white placeholder-zinc-700 focus:outline-none focus:border-white transition-all duration-500"
+                        className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors"
                     />
                 </div>
 
                 <button 
                     type="submit"
                     disabled={loading}
-                    className="w-full mt-4 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] hover:bg-zinc-200 transition-all duration-300 active:scale-95 disabled:bg-gray-400"
+                    className="w-full py-4 bg-[#d4af37] text-black font-black uppercase tracking-widest text-sm hover:bg-[#f4d03f] disabled:bg-[#3a3a3a] disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-300"
                 >
-                    {loading ? 'Вход...' : 'Подтвердить'}
+                    {loading ? 'Вход...' : 'Войти'}
                 </button>
             </form>
         </div>

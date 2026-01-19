@@ -10,8 +10,8 @@ function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [error, setError] = useState(''); // для отображения ошибок
-    const [loading, setLoading] = useState(false); // для состояния загрузки
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const [loginError, setLoginError] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
@@ -79,122 +79,132 @@ function Register() {
         try {
             const data = await api.register(login, email, password, fullName);
             
-            // Если сервер вернул user или message — всё хорошо
             if (data.user || data.id || data.message) {
-                alert('Регистрация успешна!');
                 navigate('/');
             } else {
-                // Если пришел список ошибок (например: { username: ["Занято"] })
-                // Мы берем первую ошибку из списка и показываем её
-                const firstErrorKey = Object.keys(data)[0]; // получаем имя поля (например, "password")
-                const errorMessage = data[firstErrorKey];   // получаем текст ошибки
+                const firstErrorKey = Object.keys(data)[0];
+                const errorMessage = data[firstErrorKey];
                 
-                // Если ошибка — это массив (список), превращаем в строку
                 if (Array.isArray(errorMessage)) {
                     setError(`${firstErrorKey}: ${errorMessage.join(', ')}`);
                 } else {
-                    // Если просто строка
                     setError(String(errorMessage));
                 }
             }
         } catch (err) {
             console.error('Ошибка регистрации:', err);
-            setError('Ошибка сети или сервера.');
+            setError(err.message || 'Ошибка сети или сервера.');
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="min-h-screen bg-black flex items-center justify-center px-6 py-20">
             <Navigation />
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-                    Зарегистрируйтесь в сервисе My Cloud
-                </h1>
-                <p className="text-sm text-gray-500 mb-6">
-                    Создайте аккаунт для безопасного хранения файлов и доступа к ним с любого устройства.
-                </p>
+            <div className="w-full max-w-md bg-[#0a0a0a] border border-[#2a2a2a] rounded-xl p-8">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Регистрация</h1>
+                    <p className="text-gray-400 text-sm uppercase tracking-widest">Создайте аккаунт в My Cloud</p>
+                </div>
 
-                {/* Показываем ошибки */}
                 {error && (
-                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 text-red-400 rounded-lg text-sm">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleChange} className="space-y-4">
+                <form onSubmit={handleChange} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                            Почта
+                        <label htmlFor="email" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
+                            Email
                         </label>
                         <input
                             type="email"
                             id="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setEmailError('');
+                            }}
                             required
-                            placeholder="Введите вашу почту"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                            placeholder="your@email.com"
+                            className={`w-full px-4 py-3 bg-[#1a1a1a] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors ${
+                                emailError ? 'border-red-500' : 'border-[#3a3a3a]'
+                            }`}
                         />
-                        <p className="text-red-500 text-sm">{emailError}</p>
+                        {emailError && <p className="mt-2 text-red-400 text-xs">{emailError}</p>}
                     </div>
 
                     <div>
-                        <label htmlFor="login" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="login" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                             Логин
                         </label>
                         <input
                             type="text"
                             id="login"
                             value={login}
-                            onChange={(e) => setLogin(e.target.value)}
+                            onChange={(e) => {
+                                setLogin(e.target.value);
+                                setLoginError('');
+                            }}
                             required
-                            placeholder="Введите ваш логин"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                            placeholder="Ваш логин"
+                            className={`w-full px-4 py-3 bg-[#1a1a1a] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors ${
+                                loginError ? 'border-red-500' : 'border-[#3a3a3a]'
+                            }`}
                         />
-                        <p className="text-red-500 text-sm">{loginError}</p>
+                        {loginError && <p className="mt-2 text-red-400 text-xs">{loginError}</p>}
                     </div>
 
-                    {/* НОВОЕ ПОЛЕ */}
                     <div>
-                        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="fullName" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                             Полное имя
                         </label>
                         <input
                             type="text"
                             id="fullName"
                             value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
+                            onChange={(e) => {
+                                setFullName(e.target.value);
+                                setFullNameError('');
+                            }}
                             required
-                            placeholder="Введите ваше полное имя"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                            placeholder="Ваше полное имя"
+                            className={`w-full px-4 py-3 bg-[#1a1a1a] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors ${
+                                fullNameError ? 'border-red-500' : 'border-[#3a3a3a]'
+                            }`}
                         />
-                        <p className="text-red-500 text-sm">{fullNameError}</p>
+                        {fullNameError && <p className="mt-2 text-red-400 text-xs">{fullNameError}</p>}
                     </div>
 
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="password" className="block text-xs uppercase tracking-widest text-gray-400 mb-2">
                             Пароль
                         </label>
                         <input
                             type="password"
                             id="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setPasswordError('');
+                            }}
                             required
-                            placeholder="Введите ваш пароль"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+                            placeholder="Минимум 6 символов"
+                            className={`w-full px-4 py-3 bg-[#1a1a1a] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#d4af37] transition-colors ${
+                                passwordError ? 'border-red-500' : 'border-[#3a3a3a]'
+                            }`}
                         />
-                        <p className="text-red-500 text-sm">{passwordError}</p>
+                        {passwordError && <p className="mt-2 text-red-400 text-xs">{passwordError}</p>}
                     </div>
 
                     <button 
                         type="submit" 
                         disabled={loading}
-                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-400"
+                        className="w-full py-4 bg-[#d4af37] text-black font-black uppercase tracking-widest text-sm hover:bg-[#f4d03f] disabled:bg-[#3a3a3a] disabled:text-gray-500 disabled:cursor-not-allowed transition-all duration-300"
                     >
-                        {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+                        {loading ? 'Регистрация...' : 'Создать аккаунт'}
                     </button>
                 </form>
             </div>
