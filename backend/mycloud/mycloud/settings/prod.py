@@ -39,6 +39,11 @@ SESSION_COOKIE_AGE = 86400  # 24 часа
 # Пример: CORS_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
 cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+
+# Если не указано в .env, используем localhost для разработки
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+
 CORS_ALLOW_ALL_ORIGINS = False
 
 # Static files
