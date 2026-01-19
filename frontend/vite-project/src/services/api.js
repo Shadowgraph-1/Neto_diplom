@@ -4,37 +4,35 @@
 // Или локально для разработки: VITE_API_URL=http://127.0.0.1:8000/api
 const API_URL = import.meta.env.VITE_API_URL || 'http://130.49.148.127:8000/api';
 
-// Вспомогательная функция для получения CSRF токена из cookies
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
+// Получить токен из localStorage
+function getAuthToken() {
+  return localStorage.getItem('authToken');
 }
 
-// Вспомогательная функция для выполнения запросов с сессионной аутентификацией
+// Сохранить токен в localStorage
+function setAuthToken(token) {
+  localStorage.setItem('authToken', token);
+}
+
+// Удалить токен из localStorage
+function removeAuthToken() {
+  localStorage.removeItem('authToken');
+}
+
+// Вспомогательная функция для выполнения запросов с токен-аутентификацией
 async function apiRequest(url, options = {}) {
-  const csrftoken = getCookie('csrftoken');
+  const token = getAuthToken();
   
   const defaultOptions = {
-    credentials: 'include', // Важно для сессий и CSRF
     headers: {
       'Content-Type': 'application/json',
-      ...(csrftoken && { 'X-CSRFToken': csrftoken }),
+      ...(token && { 'Authorization': `Token ${token}` }),
       ...options.headers,
     },
     ...options,
   };
 
-  // Для FormData не устанавливаем Content-Type (браузер сделает это сам)
+  // Для FormData не устанавливаем Content-Type
   if (options.body instanceof FormData) {
     delete defaultOptions.headers['Content-Type'];
   }
@@ -42,17 +40,14 @@ async function apiRequest(url, options = {}) {
   try {
     const response = await fetch(`${API_URL}${url}`, defaultOptions);
     
-    // Обработка ошибок
     if (!response.ok) {
-      // Обработка 401 (Unauthorized) - перенаправление на страницу входа
       if (response.status === 401) {
-        console.warn('Unauthorized access - redirecting to login');
+        removeAuthToken();
         if (window.location.pathname !== '/' && window.location.pathname !== '/registration') {
           window.location.href = '/';
         }
       }
       
-      // Обработка 403 (Forbidden) - недостаточно прав
       if (response.status === 403) {
         const errorData = await response.json().catch(() => ({ error: 'Доступ запрещен' }));
         throw new Error(errorData.error || 'Недостаточно прав для выполнения операции');
@@ -62,7 +57,6 @@ async function apiRequest(url, options = {}) {
       throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
     }
     
-    // Для запросов без тела (DELETE) возвращаем boolean
     if (options.method === 'DELETE' && response.status === 204) {
       return true;
     }
@@ -75,35 +69,37 @@ async function apiRequest(url, options = {}) {
 }
 
 export const api = {
-  // Регистрация
+  // Регистрация - возвращает токен
   register: async (username, email, password, full_name) => {
-    return apiRequest('/register/', {
+    const data = await apiRequest('/register/', {
       method: 'POST',
       body: JSON.stringify({ username, email, password, full_name }),
     });
+    if (data.token) {
+      setAuthToken(data.token);
+    }
+    return data;
   },
 
-  // Вход (использует сессионную аутентификацию)
+  // Вход - получает и сохраняет токен
   login: async (username, password) => {
-    // Сначала получаем CSRF токен
-    await fetch(`${API_URL}/login/`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-    
-    // Теперь выполняем вход
-    return apiRequest('/login/', {
+    const data = await apiRequest('/login/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
+    if (data.token) {
+      setAuthToken(data.token);
+    }
+    return data;
   },
 
   // Выход
   logout: async () => {
-    const result = await apiRequest('/logout/', {
-      method: 'POST',
-    });
-    return result;
+    try {
+      await apiRequest('/logout/', { method: 'POST' });
+    } finally {
+      removeAuthToken();
+    }
   },
 
   // Получить текущего пользователя
@@ -147,13 +143,9 @@ export const api = {
 
   // Скачать файл
   downloadFile: async (fileId, fileName) => {
-    const csrftoken = getCookie('csrftoken');
+    const token = getAuthToken();
     const response = await fetch(`${API_URL}/files/${fileId}/download/`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        ...(csrftoken && { 'X-CSRFToken': csrftoken }),
-      },
+      headers: { ...(token && { 'Authorization': `Token ${token}` }) },
     });
 
     if (response.ok) {
@@ -161,14 +153,13 @@ export const api = {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', fileName || 'file');
+      link.download = fileName || 'file';
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
     } else {
-      const errorData = await response.json().catch(() => ({ error: 'Ошибка при скачивании' }));
-      throw new Error(errorData.error || 'Не удалось скачать файл');
+      throw new Error('Не удалось скачать файл');
     }
   },
 
@@ -202,13 +193,9 @@ export const api = {
 
   // Просмотр файла в браузере
   viewFile: async (fileId) => {
-    const csrftoken = getCookie('csrftoken');
+    const token = getAuthToken();
     const response = await fetch(`${API_URL}/files/${fileId}/view/`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        ...(csrftoken && { 'X-CSRFToken': csrftoken }),
-      },
+      headers: { ...(token && { 'Authorization': `Token ${token}` }) },
     });
     
     if (response.ok) {
@@ -216,8 +203,7 @@ export const api = {
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
     } else {
-      const errorData = await response.json().catch(() => ({ error: 'Ошибка при просмотре' }));
-      throw new Error(errorData.error || 'Не удалось открыть файл');
+      throw new Error('Не удалось открыть файл');
     }
   },
 };
