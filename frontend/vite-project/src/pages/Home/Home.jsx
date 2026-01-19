@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 
 function Home() {
   const [modalIsOpen, setModalIsOpen] = useState(false);
-
   const navigate = useNavigate();
   
   const handleRegister = () => {
