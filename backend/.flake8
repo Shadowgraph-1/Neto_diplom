@@ -1,0 +1,14 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    migrations,
+    staticfiles,
+    .venv,
+    mycloud/manage_admin.py,
+    mycloud/create_admin.py,
+    mycloud/make_admin.py,
+    mycloud/mycloud/settings,
+    mycloud/mycloud/settings/__init__.py

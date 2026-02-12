@@ -2,9 +2,29 @@
 // Для подключения к вашему бэкенду на сервере используйте:
 // VITE_API_URL=http://130.49.148.127:8000/api
 // Или локально для разработки: VITE_API_URL=http://127.0.0.1:8000/api
-const API_URL = import.meta.env.VITE_API_URL || 'http://130.49.148.127:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+// Для production: VITE_API_URL=http://your-server:8000/api
 
-// Получить токен из localStorage
+export function getDownloadLink(specialLink) {
+  return `${API_URL}/download/${specialLink}/`;
+}
+
+let csrfTokenPromise = null;
+
+function getCsrfToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : null;
+}
+
+async function ensureCsrfToken() {
+  if (getCsrfToken()) return getCsrfToken();
+  if (!csrfTokenPromise) {
+    csrfTokenPromise = fetch(`${API_URL}/csrf/`, { credentials: 'include' })
+      .then(() => getCsrfToken());
+  }
+  return csrfTokenPromise;
+}
+
 function getAuthToken() {
   return localStorage.getItem('authToken');
 }
@@ -19,20 +39,28 @@ function removeAuthToken() {
   localStorage.removeItem('authToken');
 }
 
-// Вспомогательная функция для выполнения запросов с токен-аутентификацией
 async function apiRequest(url, options = {}) {
   const token = getAuthToken();
-  
+  const method = (options.method || 'GET').toUpperCase();
+  const needsCsrf = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+  if (needsCsrf) {
+    const csrf = await ensureCsrfToken();
+    if (csrf) {
+      options.headers = { ...options.headers, 'X-CSRFToken': csrf };
+    }
+  }
+
   const defaultOptions = {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Token ${token}` }),
+      ...(token && { Authorization: `Token ${token}` }),
       ...options.headers,
     },
     ...options,
   };
 
-  // Для FormData не устанавливаем Content-Type
   if (options.body instanceof FormData) {
     delete defaultOptions.headers['Content-Type'];
   }
@@ -54,7 +82,9 @@ async function apiRequest(url, options = {}) {
       }
       
       const errorData = await response.json().catch(() => ({ error: 'Произошла ошибка' }));
-      throw new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      const err = new Error(errorData.error || errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+      err.validationErrors = errorData;
+      throw err;
     }
     
     if (options.method === 'DELETE' && response.status === 204) {
@@ -103,9 +133,7 @@ export const api = {
   },
 
   // Получить текущего пользователя
-  getCurrentUser: async () => {
-    return apiRequest('/current-user/');
-  },
+  getCurrentUser: async () => apiRequest('/current-user/'),
 
   // Получить список файлов
   getFiles: async (userId = null) => {
@@ -127,11 +155,14 @@ export const api = {
       headers['Authorization'] = `Token ${token}`;
     }
     
-    // Для FormData используем отдельный запрос с токеном
+    const csrf = await ensureCsrfToken();
+    if (csrf) headers['X-CSRFToken'] = csrf;
+
     const response = await fetch(`${API_URL}/files/`, {
       method: 'POST',
       body: formData,
-      headers: headers,
+      headers,
+      credentials: 'include',
     });
     
     if (!response.ok) {
@@ -149,25 +180,21 @@ export const api = {
   },
 
   // Удалить файл
-  deleteFile: async (fileId) => {
-    return apiRequest(`/files/${fileId}/`, {
-      method: 'DELETE',
-    });
-  },
+  deleteFile: async fileId => apiRequest(`/files/${fileId}/`, {
+    method: 'DELETE',
+  }),
 
   // Переименовать файл
-  renameFile: async (fileId, newName) => {
-    return apiRequest(`/files/${fileId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ original_name: newName }),
-    });
-  },
+  renameFile: async (fileId, newName) => apiRequest(`/files/${fileId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ original_name: newName }),
+  }),
 
   // Скачать файл
   downloadFile: async (fileId, fileName) => {
     const token = getAuthToken();
     const response = await fetch(`${API_URL}/files/${fileId}/download/`, {
-      headers: { ...(token && { 'Authorization': `Token ${token}` }) },
+      headers: { ...(token && { Authorization: `Token ${token}` }) },
     });
 
     if (response.ok) {
@@ -186,38 +213,30 @@ export const api = {
   },
 
   // Получить список пользователей (только для админов)
-  getUsers: async () => {
-    return apiRequest('/users/');
-  },
+  getUsers: async () => apiRequest('/users/'),
 
   // Удалить пользователя
-  deleteUser: async (userId) => {
-    return apiRequest(`/users/${userId}/`, {
-      method: 'DELETE',
-    });
-  },
+  deleteUser: async userId => apiRequest(`/users/${userId}/`, {
+    method: 'DELETE',
+  }),
 
   // Обновить пользователя (изменение прав администратора)
-  updateUser: async (userId, isAdmin) => {
-    return apiRequest(`/users/${userId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ is_admin: isAdmin }),
-    });
-  },
+  updateUser: async (userId, isAdmin) => apiRequest(`/users/${userId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_admin: isAdmin }),
+  }),
 
   // Изменение комментария к файлу
-  updateFileComment: async (fileId, comment) => {
-    return apiRequest(`/files/${fileId}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ comment: comment }),
-    });
-  },
+  updateFileComment: async (fileId, comment) => apiRequest(`/files/${fileId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ comment }),
+  }),
 
   // Просмотр файла в браузере
-  viewFile: async (fileId) => {
+  viewFile: async fileId => {
     const token = getAuthToken();
     const response = await fetch(`${API_URL}/files/${fileId}/view/`, {
-      headers: { ...(token && { 'Authorization': `Token ${token}` }) },
+      headers: { ...(token && { Authorization: `Token ${token}` }) },
     });
     
     if (response.ok) {

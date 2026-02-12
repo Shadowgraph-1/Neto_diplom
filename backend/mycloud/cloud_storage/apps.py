@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class CloudStorageConfig(AppConfig):
-    name = 'cloud_storage'
+    name = "cloud_storage"

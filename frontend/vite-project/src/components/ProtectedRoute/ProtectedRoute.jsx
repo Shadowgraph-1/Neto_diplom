@@ -1,34 +1,25 @@
 import { Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchCurrentUser } from '../../store/authSlice';
 
 function ProtectedRoute({ children }) {
-    const [isAuthenticated, setIsAuthenticated] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { isAuthenticated, loading } = useSelector(state => state.auth);
 
-    useEffect(() => {
-        // Проверяем аутентификацию через API
-        api.getCurrentUser()
-            .then(() => {
-                setIsAuthenticated(true);
-            })
-            .catch(() => {
-                setIsAuthenticated(false);
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }, []);
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Загрузка...</div>;
-    }
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Загрузка...</div>;
+  }
 
-    if (!isAuthenticated) {
-        return <Navigate to="/" replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
 
-    return children;
+  return children;
 }
 
 export default ProtectedRoute;
