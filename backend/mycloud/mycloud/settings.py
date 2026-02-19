@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-oi7&9eo$rr(bw=gn)kf-qyqf-z)f)_l4^yonn=8ya-wp96z8^y'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -152,37 +152,30 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Полностью отключаем CSRF (только для разработки!)
-CSRF_USE_SESSIONS = False
+# CSRF для разработки (API использует Token auth - CSRF не требуется для токен-запросов)
 CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_SAMESITE = None
-CSRF_COOKIE_SAMESITE = None
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+CSRF_COOKIE_SECURE = False
 
-# CORS
+# CORS (добавлен 5174 для local dev)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173", 
-    "http://127.0.0.1:5173", 
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
 ]
 CORS_ALLOW_CREDENTIALS = True
-
-
-# Отключаем CSRF для API (только для разработки!)
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:8000',
-]
-
-# Или полностью отключить CSRF для API endpoints
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False
-
-
-# Отключаем проверку CSRF для всех запросов (только для разработки!)
-CSRF_COOKIE_MASKED = False
-
-CORS_ALLOW_ALL_ORIGINS = False  # или True для разработки (небезопасно для продакшена)
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
